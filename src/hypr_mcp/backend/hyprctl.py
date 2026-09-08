@@ -90,6 +90,9 @@ class HyprlandBackend:
                     if "send_shortcut" in call else self.settings.dispatch_retries)
         return await _raw_dispatch(call, attempts=attempts)
 
+    async def query(self, command: str):
+        return await query(command)
+
     async def focus_window(self, target: str) -> str:
         return await self._lua(f"hl.dsp.focus({{window={lua_str(target)}}})")
 

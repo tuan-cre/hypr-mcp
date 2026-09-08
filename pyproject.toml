@@ -10,7 +10,7 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 dependencies = [
-    "mcp",
+    "mcp<2",
     "Pillow",
     "pytesseract",
 ]
