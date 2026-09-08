@@ -279,12 +279,18 @@ class HyprlandBackend:
 
     async def launch(self, command: str, expect_class: str | None = None) -> str:
         # exec_raw: no shell expansion (exec_cmd would run sh -c).
-        # Wait for the window to actually open; guess the class from argv[0].
-        hint = (expect_class or command.split()[0] if command.split() else "").lower()
+        # Wait for the window to actually open. The class guess (argv[0])
+        # often differs from the real class (helium-browser -> helium),
+        # so also accept the name before any '-'/' ' suffix.
+        first = command.split()[0] if command.split() else ""
+        hints = {h for h in (
+            (expect_class or "").lower(), first.lower(),
+            first.lower().split("-")[0], first.lower().split(" ")[0],
+        ) if h}
         data = (await self._dispatch_and_wait(
             f"hl.dsp.exec_raw({lua_str(command)})",
             "openwindow",
-            match=(lambda d: d.split(",")[2].lower() == hint) if hint else None,
+            match=lambda d: d.split(",")[2].lower() in hints,
             desc=f"launch {command}"))[1]
         addr = norm_addr(data.split(",")[0])
         cls = data.split(",")[2] if "," in data else ""
