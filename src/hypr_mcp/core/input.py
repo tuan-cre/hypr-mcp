@@ -42,9 +42,18 @@ async def drag(backend, sx: int, sy: int, ex: int, ey: int, button: str = "left"
 
 
 async def type_text(text: str, delay_ms: int = 0) -> None:
-    require_tool("wtype")
-    cmd = ["wtype"] + (["-d", str(delay_ms)] if delay_ms > 0 else []) + ["--", text]
-    await run(*cmd)
+    try:
+        require_tool("wtype")
+        cmd = ["wtype"] + (["-d", str(delay_ms)] if delay_ms > 0 else []) + ["--", text]
+        await run(*cmd)
+    except Exception as e:
+        from ..errors import ToolNotFoundError
+        if isinstance(e, ToolNotFoundError):
+            raise InputError(
+                "wtype is not installed — install it, or use paste_text() "
+                "(clipboard + ctrl+v, no wtype needed) instead."
+            ) from e
+        raise
 
 
 async def key_press(backend, keys: str, target: str | None = None) -> None:

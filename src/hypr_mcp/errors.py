@@ -48,6 +48,10 @@ REQUIRED_TOOLS = {
     "tesseract": "OCR (text recognition)",
 }
 
+# Install tiers: base covers everything except OCR. Full adds text recognition.
+BASE_TOOLS = ("hyprctl", "grim", "ydotool", "wl-copy", "wl-paste", "wtype")
+OCR_TOOLS = ("tesseract",)
+
 
 def check_tools() -> dict[str, bool]:
     """Check which system tools are installed. Returns {tool_name: is_available}."""

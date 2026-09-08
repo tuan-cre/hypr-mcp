@@ -10,10 +10,12 @@ readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 dependencies = [
-    "mcp[cli]",
+    "mcp",
     "Pillow",
-    "pytesseract",
 ]
+
+[project.optional-dependencies]
+ocr = ["pytesseract"]
 
 [project.scripts]
 hypr-mcp = "hypr_mcp.server:main"
