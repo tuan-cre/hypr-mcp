@@ -4,7 +4,8 @@ Let MCP clients drive Hyprland: screenshots, mouse, keyboard, windows,
 workspaces, clipboard, launching apps, OCR.
 
 Needs Hyprland 0.55 or newer. Older versions get a clear error instead of
-weird behavior. Works with OpenCode, Claude Code, anything speaking MCP.
+weird behavior. Made for OpenCode; anything else speaking MCP might work
+but hasn't been tested.
 
 ## Needs
 
@@ -27,8 +28,8 @@ No `tesseract`? Models with vision just look at screenshots directly.
 curl -sSL https://raw.githubusercontent.com/tuan-cre/hypr-mcp/main/install.sh | bash
 ```
 
-That handles system deps, `pipx install`, and Claude Code registration.
-For OpenCode, add to `~/.config/opencode/opencode.jsonc`:
+That handles system deps and `pipx install`.
+Then add to `~/.config/opencode/opencode.jsonc`:
 
 ```jsonc
 {
