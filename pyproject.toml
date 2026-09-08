@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hypr-mcp"
+version = "0.1.0"
+description = "MCP server for Hyprland desktop automation — screenshots, input, window management, OCR"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp[cli]",
+    "Pillow",
+    "pytesseract",
+]
+
+[project.scripts]
+hypr-mcp = "hypr_mcp.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hypr_mcp"]
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
