@@ -3,7 +3,7 @@
 import io
 
 from PIL import Image as PILImage
-from mcp.server.fastmcp import Image
+from mcp.server.mcpserver import Image
 
 
 def resize_and_compress(

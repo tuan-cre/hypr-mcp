@@ -1,21 +1,23 @@
-"""FastMCP wiring only. No hyprctl strings here — see backend/."""
+"""MCPServer wiring only. No hyprctl strings here — see backend/."""
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server import MCPServer
 
+from . import __version__ as _pkg_version
 from .backend import require_backend
 from .config import Settings
 from .tools import desktop, vision
 
 
-def create_server(settings: Settings | None = None) -> FastMCP:
+def create_server(settings: Settings | None = None) -> MCPServer:
     settings = settings or Settings.from_env()
-    mcp = FastMCP(
+    mcp = MCPServer(
         "hyprland",
         instructions=(
             "Desktop automation for Hyprland (Wayland). Screenshots, mouse/keyboard, "
             "window management, clipboard, app launching. "
             "Coordinates are always absolute screen pixels; never use raw image pixels."
         ),
+        version=_pkg_version,
     )
     backend: list = [None]
 
