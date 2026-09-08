@@ -28,8 +28,7 @@ def register(mcp, get_backend, settings):
     @mcp.tool()
     async def switch_workspace(workspace: str) -> str:
         """Switch to a workspace by name/number (e.g. "1", "special:scratchpad")."""
-        await (await get_backend()).switch_workspace(workspace)
-        return f"Switched to workspace {workspace}"
+        return await (await get_backend()).switch_workspace(workspace)
 
     @mcp.tool()
     async def get_cursor_position() -> str:
@@ -53,7 +52,7 @@ def register(mcp, get_backend, settings):
             out.append(
                 f"- [{c['class']}] \"{c['title']}\" — "
                 f"{c['size'][0]}x{c['size'][1]} at ({c['at'][0]},{c['at'][1]}), "
-                f"workspace {c['workspace']['name']}{focused}")
+                f"workspace {c['workspace']['name']}, address {c.get('address', '?')}{focused}")
         return "\n".join(out)
 
     @mcp.tool()
@@ -70,15 +69,13 @@ def register(mcp, get_backend, settings):
 
     @mcp.tool()
     async def focus_window(target: str) -> str:
-        """Focus a window by selector ("class:firefox", "title:Doc")."""
-        await (await get_backend()).focus_window(target)
-        return f"Focused window matching '{target}'"
+        """Focus a window by selector ("class:firefox", "title:Doc", "address:0x...")."""
+        return await (await get_backend()).focus_window(target)
 
     @mcp.tool()
     async def close_window(target: str | None = None) -> str:
         """Close a window (WM_CLOSE, apps may prompt to save)."""
-        await (await get_backend()).close_window(target)
-        return f"Closed window{f' matching {target!r}' if target else ' (active)'}"
+        return await (await get_backend()).close_window(target)
 
     @mcp.tool()
     async def move_window(target: str | None = None, x: int | None = None,
@@ -125,9 +122,8 @@ def register(mcp, get_backend, settings):
 
     @mcp.tool()
     async def launch_app(command: str) -> str:
-        """Launch an app detached (no shell — no pipes/redirects; binary + args only)."""
-        await (await get_backend()).launch(command)
-        return f"Launched: {command}"
+        """Launch an app detached (no shell — binary + args only). Waits for its window."""
+        return await (await get_backend()).launch(command)
 
     @mcp.tool()
     async def clipboard_read(max_chars: int = 4000) -> str:

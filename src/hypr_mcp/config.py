@@ -12,6 +12,7 @@ class Settings:
     ocr_upscale: int = 2
     focus_settle_s: float = 0.3
     click_settle_s: float = 0.2
+    event_timeout_s: float = 10.0
     dispatch_retries: int = 2
     send_shortcut_retries: int = 5
 
@@ -36,6 +37,7 @@ class Settings:
             ocr_upscale=_int("HYPR_MCP_OCR_UPSCALE", 2),
             focus_settle_s=_float("HYPR_MCP_FOCUS_SETTLE", 0.3),
             click_settle_s=_float("HYPR_MCP_CLICK_SETTLE", 0.2),
+            event_timeout_s=_float("HYPR_MCP_EVENT_TIMEOUT", 10.0),
         )
 
 

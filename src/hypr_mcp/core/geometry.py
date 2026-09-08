@@ -25,13 +25,16 @@ class Region:
 
 
 def matches_selector(client: dict, selector: str) -> bool:
-    """Match a hyprctl client by 'class:X', 'title:Y', or bare class."""
+    """Match a hyprctl client by 'class:X', 'title:Y', 'address:0x...', or bare class."""
+    from ..backend.events import norm_addr
     cls = str(client.get("class", ""))
     title = str(client.get("title", ""))
     if selector.startswith("class:"):
         return cls.lower() == selector[6:].lower()
     if selector.startswith("title:"):
         return selector[6:].lower() in title.lower()
+    if selector.startswith("address:"):
+        return norm_addr(str(client.get("address", ""))) == norm_addr(selector[8:])
     return cls.lower() == selector.lower()
 
 
