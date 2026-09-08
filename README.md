@@ -1,29 +1,25 @@
 # hypr-mcp
 
-MCP server for Hyprland desktop automation — screenshots, mouse/keyboard input,
-window management, workspaces, clipboard, app launching, and OCR.
+Let MCP clients drive Hyprland: screenshots, mouse, keyboard, windows,
+workspaces, clipboard, launching apps, OCR.
 
-Built for Hyprland **>= 0.55** (Lua `hl.dsp.*` dispatch). Older versions fail
-fast with a clear error instead of silently mis-dispatching. Works with
-[OpenCode](https://opencode.ai), Claude Code, and any MCP client.
+Needs Hyprland 0.55 or newer. Older versions get a clear error instead of
+weird behavior. Works with OpenCode, Claude Code, anything speaking MCP.
 
-## Requirements
+## Needs
 
-- Hyprland >= 0.55, Python 3.10+, `pipx`
-- System tools (Arch names — adapt to your distro):
+Hyprland, Python 3.10+, pipx, plus (Arch names, adapt to your distro):
 
-| Tool | Needed for |
+| Tool | For |
 | --- | --- |
-| `hyprctl` (Hyprland itself) | everything |
 | `grim` | screenshots, OCR |
-| `ydotool` (+ `ydotoold` running) | mouse click / scroll / drag |
-| `wtype` | `type_text`, single-key presses (games, terminals, password fields) |
-| `wl-clipboard` | clipboard, `paste_text` |
-| `tesseract` + `tesseract-data-eng` | OCR tools (`find_text_on_screen`, `click_text`) |
+| `ydotool` (+ `ydotoold` running) | clicking, scroll, drag |
+| `wtype` | typing, single keys |
+| `wl-clipboard` | clipboard, pasting |
+| `tesseract` + `tesseract-data-eng` | finding text on screen |
 
-Typing works without `wtype` via `paste_text` (clipboard + ctrl+v).
-Reading works without `tesseract` if your model has vision (it looks at
-screenshots directly) — text-only models need it.
+No `wtype`? `paste_text` (clipboard + ctrl+v) covers most typing.
+No `tesseract`? Models with vision just look at screenshots directly.
 
 ## Install
 
@@ -31,9 +27,8 @@ screenshots directly) — text-only models need it.
 curl -sSL https://raw.githubusercontent.com/tuan-cre/hypr-mcp/main/install.sh | bash
 ```
 
-This installs system deps (pacman/apt/dnf), installs `hypr-mcp` via pipx,
-and registers it with Claude Code if present. For OpenCode, add to
-`~/.config/opencode/opencode.jsonc`:
+That handles system deps, `pipx install`, and Claude Code registration.
+For OpenCode, add to `~/.config/opencode/opencode.jsonc`:
 
 ```jsonc
 {
@@ -48,71 +43,36 @@ and registers it with Claude Code if present. For OpenCode, add to
 }
 ```
 
-Manual install:
+Or manually: `pipx install git+https://github.com/tuan-cre/hypr-mcp.git`
 
-```bash
-pipx install git+https://github.com/tuan-cre/hypr-mcp.git
-```
+## Tools (31)
 
-Verify: `opencode2 mcp list` should show `✓ hypr connected`.
+Seeing — `screenshot`, `screenshot_save`, `find_text_on_screen`,
+`click_text`, `wait_text`.
 
-## Tools (29)
+Mouse — `mouse_move`, `mouse_click`, `mouse_scroll`, `mouse_drag`.
 
-Screenshot & OCR — `screenshot` (inline JPEG + absolute-coordinate mapping),
-`screenshot_save` (full-res PNG to disk, zero tokens), `find_text_on_screen`
-(OCR → screen coords for `mouse_click`), `click_text` (find + click in one call).
-
-Mouse — `mouse_move` (pixel-accurate via `hl.dsp.cursor.move`),
-`mouse_click` (optional focus-first `window`), `mouse_scroll`, `mouse_drag`.
-
-Keyboard — `type_text` (`wtype`), `key_press` (`"ctrl+c"`, `"Return"`, ...),
-`paste_text` (clipboard + ctrl+v — the reliable path for unicode/long text).
+Keyboard — `type_text`, `key_press`, `paste_text`.
 
 Windows — `list_windows`, `get_active_window`, `focus_window`,
-`close_window` (WM_CLOSE, apps may prompt), `move_window`, `resize_window`,
-`toggle_fullscreen(mode, action)`, `toggle_floating(target, action)`
-(`action` = `set`/`unset`/`toggle`).
+`close_window`, `move_window`, `resize_window`, `toggle_fullscreen`,
+`toggle_floating`.
 
-Workspaces — `list_workspaces`, `get_active_workspace`, `switch_workspace`,
-`toggle_special(name)`, `move_to_special(name)` (scratchpad).
+Workspaces — `list_workspaces`, `get_active_workspace`,
+`switch_workspace`, `toggle_special`, `move_to_special`.
 
-Monitors — `list_monitors`, `get_cursor_position` (always absolute pixels).
+Misc — `list_monitors`, `get_cursor_position`, `clipboard_read`,
+`clipboard_write`, `launch_app`, `wait_window`.
 
-Clipboard — `clipboard_read(max_chars=4000)`, `clipboard_write`.
+Actions confirm themselves where possible (launch/focus/close wait for the
+real event, not a sleep). No force-kill, no shell in `launch_app`,
+clipboard reads are capped.
 
-Apps — `launch_app` (detached via `exec_raw` — no shell, binary + args only).
+## Config
 
-## Configuration
-
-Env tunables: `HYPR_MCP_MAX_WIDTH` (default 1440), `HYPR_MCP_JPEG_QUALITY`
-(default 75), `HYPR_MCP_OCR_MIN_CONF` (30), `HYPR_MCP_FOCUS_SETTLE` (0.3s),
-`HYPR_MCP_CLICK_SETTLE` (0.2s).
-
-## How it works
-
-Every `screenshot` returns a coordinate mapping (`screen = image * k + origin`)
-so the model never uses raw image pixels on multi-monitor layouts.
-OCR auto-scopes to the active window and inverts dark themes before Tesseract.
-Mouse positioning uses Hyprland's native `cursor.move` (no acceleration drift);
-`ydotool` handles button events only.
-
-## Layout
-
-```
-src/hypr_mcp/
-  server.py   # MCPServer wiring only
-  config.py   # env tunables
-  backend/    # hyprctl.py — all hl.dsp.* strings + >=0.55 version gate
-  core/       # proc, geometry, grim, images, input, ocr, clipboard
-  tools/      # desktop.py, vision.py
-```
-
-## Safety
-
-- No filesystem access — screen + input only.
-- `close_window` sends WM_CLOSE (save dialogs work); no force-kill tool.
-- `launch_app` uses `exec_raw`: no shell expansion, no pipes.
-- `clipboard_read` is length-capped.
+Env vars, all optional: `HYPR_MCP_MAX_WIDTH` (1440),
+`HYPR_MCP_JPEG_QUALITY` (75), `HYPR_MCP_OCR_MIN_CONF` (30),
+`HYPR_MCP_EVENT_TIMEOUT` (10s), `HYPR_MCP_LAUNCH_TIMEOUT` (30s).
 
 ## License
 
