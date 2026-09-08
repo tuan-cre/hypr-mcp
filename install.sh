@@ -69,12 +69,7 @@ else
     info "hypr-mcp installed"
 fi
 
-# ── Register ─────────────────────────────────────────────────────────
-if command -v claude &>/dev/null; then
-    claude mcp add --transport stdio --scope user hyprland -- hypr-mcp || true
-    info "Registered with Claude Code"
-fi
-
+# ── Next step ──────────────────────────────────────────────────────
 echo
 info "Done."
 echo "  OpenCode: add {\"mcp\": {\"servers\": {\"hypr\": {\"type\": \"local\", \"command\": [\"hypr-mcp\"]}}}} to ~/.config/opencode/opencode.jsonc"
