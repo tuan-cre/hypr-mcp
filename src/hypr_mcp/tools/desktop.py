@@ -176,6 +176,7 @@ def register(mcp, get_backend, settings):
         b = await get_backend()
         if x is not None and y is not None:
             await b.move_cursor(x, y)
+            await asyncio.sleep(settings.click_settle_s)
         await inp.scroll(direction, amount)
         pos = f" at ({x},{y})" if x is not None and y is not None else ""
         return f"Scrolled {direction} {amount} steps{pos}"

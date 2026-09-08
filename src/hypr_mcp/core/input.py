@@ -23,9 +23,21 @@ async def click(button: str = "left", double: bool = False) -> None:
 
 
 async def scroll(direction: str = "down", amount: int = 3) -> None:
+    """Scroll via arrow keys.
+
+    ydotool's REL_WHEEL events reach /dev/input intact but never move any
+    client (verified on Kate + OBS Settings; clicks/keys from the same
+    daemon work), so wheel scrolling is a silent no-op on this stack.
+    Arrow keys are the working equivalent. amount = key presses (cap 50).
+    Note: inside dialogs arrows may move widget focus instead of scrolling.
+    """
     require_tool("ydotool")
-    y = amount if direction == "down" else -amount
-    await run("ydotool", "mousemove", "--wheel", "-x", "0", "-y", str(y))
+    code = 108 if direction == "down" else 103  # Down / Up
+    n = max(1, min(int(amount), 50))
+    args: list[str] = []
+    for _ in range(n):
+        args += [f"{code}:1", f"{code}:0"]
+    await run("ydotool", "key", "-d", "15", *args)
 
 
 async def drag(backend, sx: int, sy: int, ex: int, ey: int, button: str = "left") -> None:
