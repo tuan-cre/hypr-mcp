@@ -97,6 +97,16 @@ def register(mcp, get_backend, settings):
                 f"{w['windows']} window(s), monitor {w['monitor']}")
 
     @mcp.tool()
+    async def wait_window(target: str | None = None, title_contains: str | None = None,
+                          timeout: float = 10.0) -> str:
+        """Wait for a window to exist / reach a title. Replaces blind sleeps.
+
+        Use after launch_app or navigation: title change is the load signal
+        (e.g. title_contains="Example Domain"). Returns instantly on match.
+        """
+        return await (await get_backend()).wait_window(target, title_contains, timeout)
+
+    @mcp.tool()
     async def toggle_special(name: str) -> str:
         """Toggle a special (scratchpad) workspace by name."""
         await (await get_backend()).toggle_special(name)

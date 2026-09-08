@@ -315,6 +315,39 @@ class HyprlandBackend:
             raise WindowNotFoundError(f"No window found matching '{selector}'")
         return int(c["at"][0]), int(c["at"][1])
 
+    async def wait_window(self, target: str | None = None, title_contains: str | None = None,
+                          timeout: float = 10.0) -> str:
+        """Poll clients until a window matches (title substring optional).
+
+        The answer to app-internal readiness (page loads, slow startups):
+        bounded polling with instant return, never a blind sleep.
+        """
+        import time
+        from ..errors import WindowNotFoundError
+        deadline = time.monotonic() + timeout
+        last_seen = "no windows"
+        while True:
+            clients = await query("clients")
+            candidates = ([c for c in clients if matches_selector(c, target)]
+                          if target else list(clients))
+            if target and not candidates:
+                last_seen = f"no window matching '{target}'"
+            else:
+                for c in candidates:
+                    title = str(c.get("title", ""))
+                    if title_contains is None or title_contains.lower() in title.lower():
+                        return (f"Matched [{c['class']}] \"{title}\" "
+                                f"at ({c['at'][0]},{c['at'][1]}), "
+                                f"address {c.get('address', '?')}")
+                last_seen = f"{len(candidates)} candidate(s), none with '{title_contains}' in title"
+            if time.monotonic() >= deadline:
+                raise WindowNotFoundError(
+                    f"Timed out after {timeout}s waiting for window"
+                    f"{f' matching {target!r}' if target else ''}"
+                    f"{f' with title containing {title_contains!r}' if title_contains else ''} "
+                    f"({last_seen})")
+            await asyncio.sleep(0.3)
+
 
 async def require_backend(settings: Settings | None = None) -> HyprlandBackend:
     """Fail fast on Hyprland < 0.55 instead of mis-dispatching."""
