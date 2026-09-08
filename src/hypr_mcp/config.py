@@ -13,6 +13,7 @@ class Settings:
     focus_settle_s: float = 0.3
     click_settle_s: float = 0.2
     event_timeout_s: float = 10.0
+    launch_timeout_s: float = 30.0
     dispatch_retries: int = 2
     send_shortcut_retries: int = 5
 
@@ -38,6 +39,7 @@ class Settings:
             focus_settle_s=_float("HYPR_MCP_FOCUS_SETTLE", 0.3),
             click_settle_s=_float("HYPR_MCP_CLICK_SETTLE", 0.2),
             event_timeout_s=_float("HYPR_MCP_EVENT_TIMEOUT", 10.0),
+            launch_timeout_s=_float("HYPR_MCP_LAUNCH_TIMEOUT", 30.0),
         )
 
 

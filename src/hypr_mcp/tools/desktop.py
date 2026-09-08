@@ -131,9 +131,13 @@ def register(mcp, get_backend, settings):
         return f"{action.capitalize()}d floating{f' for {target}' if target else ''}"
 
     @mcp.tool()
-    async def launch_app(command: str) -> str:
-        """Launch an app detached (no shell — binary + args only). Waits for its window."""
-        return await (await get_backend()).launch(command)
+    async def launch_app(command: str, timeout: float | None = None) -> str:
+        """Launch an app detached (no shell — binary + args only). Waits for its window.
+
+        Slow starters (Steam) need the generous default; pass a smaller
+        timeout for known-fast apps, larger for known-slow ones.
+        """
+        return await (await get_backend()).launch(command, timeout=timeout)
 
     @mcp.tool()
     async def clipboard_read(max_chars: int = 4000) -> str:

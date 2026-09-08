@@ -24,15 +24,27 @@ class Region:
         return cls(*[int(g) for g in m.groups()])
 
 
+def norm_text(s: str) -> str:
+    """Lowercase alphanumeric only — makes matching immune to case,
+    spaces, hyphens and punctuation ("Master Duel" == "masterduel",
+    "UPDATE" == "Update"). Empty string when nothing alphanumeric."""
+    return re.sub(r"[^a-z0-9]", "", s.lower())
+
+
 def matches_selector(client: dict, selector: str) -> bool:
-    """Match a hyprctl client by 'class:X', 'title:Y', 'address:0x...', or bare class."""
+    """Match a hyprctl client by 'class:X', 'title:Y', 'address:0x...', or bare class.
+
+    Title matching is normalized (case/space/punct-insensitive) because
+    compositor titles vary ("masterduel" vs "Master Duel").
+    """
     from ..backend.events import norm_addr
     cls = str(client.get("class", ""))
     title = str(client.get("title", ""))
     if selector.startswith("class:"):
         return cls.lower() == selector[6:].lower()
     if selector.startswith("title:"):
-        return selector[6:].lower() in title.lower()
+        want = norm_text(selector[6:])
+        return bool(want) and want in norm_text(title)
     if selector.startswith("address:"):
         return norm_addr(str(client.get("address", ""))) == norm_addr(selector[8:])
     return cls.lower() == selector.lower()

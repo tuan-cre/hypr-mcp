@@ -65,6 +65,18 @@ def register(mcp, get_backend, settings):
         return "\n".join(out)
 
     @mcp.tool()
+    async def wait_text(target: str, window: str | None = None,
+                        region: str | None = None, monitor: str | None = None,
+                        timeout: float = 10.0, disappear: bool = False) -> str:
+        """Wait for on-screen text to appear (or disappear). Replaces blind sleeps.
+
+        Use for in-window state no compositor event covers: button flips
+        (UPDATE→PLAY), page content, dialogs. Returns instantly on match.
+        """
+        b = await get_backend()
+        return await b.wait_text(target, window, region, monitor, timeout, disappear)
+
+    @mcp.tool()
     async def click_text(target: str, button: str = "left", double: bool = False,
                          monitor: str | None = None, window: str | None = None,
                          region: str | None = None, occurrence: int = 1,

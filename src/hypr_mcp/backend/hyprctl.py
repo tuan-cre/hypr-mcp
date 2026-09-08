@@ -6,7 +6,7 @@ import re
 import shutil
 
 from ..config import Settings
-from ..core.geometry import find_client, matches_selector
+from ..core.geometry import find_client, matches_selector, norm_text
 from ..errors import HyprctlError, require_tool
 from .events import get_bus, norm_addr
 
@@ -117,7 +117,7 @@ class HyprlandBackend:
         return await query(command)
 
     async def _dispatch_and_wait(self, call: str, event: str, match=None,
-                                 desc: str = "") -> tuple[str, str]:
+                                 desc: str = "", timeout: float | None = None) -> tuple[str, str]:
         """Dispatch, then wait for the confirming socket2 event.
 
         The waiter registers BEFORE dispatching so fast events can't slip
@@ -125,7 +125,8 @@ class HyprlandBackend:
         """
         bus = get_bus()
         waiter = asyncio.create_task(
-            bus.wait_for(event, match, timeout=self.settings.event_timeout_s, desc=desc))
+            bus.wait_for(event, match,
+                         timeout=timeout or self.settings.event_timeout_s, desc=desc))
         try:
             out = await self._lua(call)
         except Exception:
@@ -277,11 +278,14 @@ class HyprlandBackend:
             fields.append(f"window = {lua_str(await self._resolve(target))}")
         return await self._lua(f"hl.dsp.send_shortcut({{{', '.join(fields)}}})")
 
-    async def launch(self, command: str, expect_class: str | None = None) -> str:
+    async def launch(self, command: str, expect_class: str | None = None,
+                     timeout: float | None = None) -> str:
         # exec_raw: no shell expansion (exec_cmd would run sh -c).
         # Wait for the window to actually open. The class guess (argv[0])
         # often differs from the real class (helium-browser -> helium),
         # so also accept the name before any '-'/' ' suffix.
+        # Slow starters (Steam CEF init) need ~20s — default is generous,
+        # override per-call for known-fast or known-slow apps.
         first = command.split()[0] if command.split() else ""
         hints = {h for h in (
             (expect_class or "").lower(), first.lower(),
@@ -291,7 +295,8 @@ class HyprlandBackend:
             f"hl.dsp.exec_raw({lua_str(command)})",
             "openwindow",
             match=lambda d: d.split(",")[2].lower() in hints,
-            desc=f"launch {command}"))[1]
+            desc=f"launch {command}",
+            timeout=timeout or self.settings.launch_timeout_s))[1]
         addr = norm_addr(data.split(",")[0])
         cls = data.split(",")[2] if "," in data else ""
         return f"Launched: {command} (window 0x{addr} [{cls}])"
@@ -326,6 +331,7 @@ class HyprlandBackend:
         from ..errors import WindowNotFoundError
         deadline = time.monotonic() + timeout
         last_seen = "no windows"
+        want = norm_text(title_contains) if title_contains else ""
         while True:
             clients = await query("clients")
             candidates = ([c for c in clients if matches_selector(c, target)]
@@ -335,7 +341,7 @@ class HyprlandBackend:
             else:
                 for c in candidates:
                     title = str(c.get("title", ""))
-                    if title_contains is None or title_contains.lower() in title.lower():
+                    if not want or want in norm_text(title):
                         return (f"Matched [{c['class']}] \"{title}\" "
                                 f"at ({c['at'][0]},{c['at'][1]}), "
                                 f"address {c.get('address', '?')}")
@@ -347,6 +353,39 @@ class HyprlandBackend:
                     f"{f' with title containing {title_contains!r}' if title_contains else ''} "
                     f"({last_seen})")
             await asyncio.sleep(0.3)
+
+    async def wait_text(self, target: str, window: str | None = None,
+                        region: str | None = None, monitor: str | None = None,
+                        timeout: float = 10.0, disappear: bool = False) -> str:
+        """Poll OCR until text appears (or disappears with disappear=True).
+
+        The answer to in-window state changes no compositor event covers:
+        page content, download-button flips (UPDATE→PLAY), dialogs.
+        Bounded polling with instant return, never a blind sleep.
+        Screenshots are heavier than hyprctl queries, so polls every 0.5s.
+        """
+        import time
+        from ..core import grim, ocr
+        deadline = time.monotonic() + timeout
+        last = "no capture yet"
+        while True:
+            png, ox, oy = await grim.capture(monitor, window, region)
+            boxes = await asyncio.to_thread(ocr.extract_boxes, png, self.settings)
+            matches = ocr.find_text(boxes, target)
+            if disappear and not matches:
+                return f"Text '{target}' gone after polling"
+            if not disappear and matches:
+                m = matches[0]
+                return (f"Found '{m['text']}' at screen "
+                        f"({m['x'] + ox + m['w'] // 2}, {m['y'] + oy + m['h'] // 2}) "
+                        f"[conf: {m['conf']}%]")
+            last = f"{len(matches)} match(es)"
+            if time.monotonic() >= deadline:
+                verb = "disappear" if disappear else "appear"
+                raise HyprctlError(
+                    f"Timed out after {timeout}s waiting for text {target!r} "
+                    f"to {verb} ({last})")
+            await asyncio.sleep(0.5)
 
 
 async def require_backend(settings: Settings | None = None) -> HyprlandBackend:

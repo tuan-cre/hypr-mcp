@@ -59,16 +59,25 @@ def extract_boxes(image_bytes: bytes, settings: Settings) -> list[dict]:
 
 
 def find_text(boxes: list[dict], target: str) -> list[dict]:
-    """Case-insensitive single-word substring, or exact multi-word phrase merge."""
-    words = target.lower().split()
+    """Normalized single-word substring, or exact multi-word phrase merge.
+
+    Both query and boxes go through norm_text, so "Master-Duel",
+    "master duel" and "MASTERDUEL" all match each other. OCR misreads
+    of individual letters (vu vs Yu) still won't match — shorten the
+    query to the distinctive words instead.
+    """
+    from .geometry import norm_text
+    words = [w for w in (norm_text(w) for w in target.lower().split()) if w]
+    if not words:
+        return []
     if len(words) == 1:
-        out = [b for b in boxes if words[0] in b["text"].lower()]
+        out = [b for b in boxes if words[0] in norm_text(b["text"])]
         out.sort(key=lambda b: b["conf"], reverse=True)
         return out
     matches = []
     for i in range(len(boxes) - len(words) + 1):
         span = boxes[i:i + len(words)]
-        if [b["text"].lower() for b in span] != words:
+        if [norm_text(b["text"]) for b in span] != words:
             continue
         ys = [b["y"] for b in span]
         if max(ys) - min(ys) >= span[0]["h"] * 1.5:
