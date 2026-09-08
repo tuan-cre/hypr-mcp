@@ -5,18 +5,7 @@ import io
 from PIL import Image as PILImage, ImageOps, ImageFilter
 
 from ..config import Settings
-from ..errors import HyprMCPError, require_tool
-
-
-def _pytesseract():
-    try:
-        import pytesseract
-    except ImportError:
-        raise HyprMCPError(
-            "OCR needs the 'ocr' extra plus the tesseract binary: "
-            "pipx inject hypr-mcp hypr-mcp[ocr] && pacman -S tesseract tesseract-data-eng"
-        )
-    return pytesseract
+from ..errors import require_tool
 
 
 def preprocess(img: PILImage.Image, settings: Settings) -> PILImage.Image:
@@ -33,18 +22,21 @@ def preprocess(img: PILImage.Image, settings: Settings) -> PILImage.Image:
 
 def extract_text(image_bytes: bytes, settings: Settings) -> str:
     require_tool("tesseract")
+    import pytesseract
+
     img = PILImage.open(io.BytesIO(image_bytes))
-    return _pytesseract().image_to_string(preprocess(img, settings)).strip()
+    return pytesseract.image_to_string(preprocess(img, settings)).strip()
 
 
 def extract_boxes(image_bytes: bytes, settings: Settings) -> list[dict]:
     """Word boxes in original-image coords (upscale compensated)."""
     require_tool("tesseract")
+    import pytesseract
+
     img = PILImage.open(io.BytesIO(image_bytes))
     k = max(1, settings.ocr_upscale)
-    pt = _pytesseract()
-    data = pt.image_to_data(
-        preprocess(img, settings), output_type=pt.Output.DICT
+    data = pytesseract.image_to_data(
+        preprocess(img, settings), output_type=pytesseract.Output.DICT
     )
     boxes = []
     for i, text in enumerate(data["text"]):

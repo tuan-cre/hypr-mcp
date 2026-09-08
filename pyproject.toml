@@ -12,10 +12,8 @@ requires-python = ">=3.10"
 dependencies = [
     "mcp",
     "Pillow",
+    "pytesseract",
 ]
-
-[project.optional-dependencies]
-ocr = ["pytesseract"]
 
 [project.scripts]
 hypr-mcp = "hypr_mcp.server:main"

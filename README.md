@@ -6,12 +6,9 @@ MCP server for Hyprland desktop automation — screenshots, input, window manage
 
 Requires Hyprland >= 0.55 (Lua `hl.dsp.*` dispatch). Older versions fail fast with a clear error.
 
-Base (everything except OCR): `hyprctl` (Hyprland itself), `grim`, `ydotool`
-(+ `ydotoold` running), `wtype`, `wl-clipboard`. Typing works without `wtype`
-via `paste_text`, but games/terminals/password fields still want it.
-
-Full (+ text recognition): `tesseract`, `tesseract-data-eng`, plus
-`pipx inject hypr-mcp hypr-mcp[ocr]`.
+Base: `hyprctl` (Hyprland itself), `grim`, `ydotool`
+(+ `ydotoold` running), `wtype`, `wl-clipboard`, `tesseract` + `tesseract-data-eng`.
+One install, works with vision and text-only models alike — no per-model setup.
 
 ## Run
 
