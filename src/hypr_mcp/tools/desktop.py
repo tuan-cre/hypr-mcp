@@ -93,28 +93,50 @@ def register(mcp, get_backend, settings):
         return f"Resized to {width}x{height}"
 
     @mcp.tool()
-    async def toggle_fullscreen(mode: str = "fullscreen") -> str:
-        """Toggle fullscreen ("fullscreen") or maximized ("maximize")."""
-        await (await get_backend()).toggle_fullscreen(mode)
-        return f"Toggled {mode}"
+    async def get_active_workspace() -> str:
+        """Focused workspace with window count and monitor."""
+        w = await (await get_backend()).query("activeworkspace")
+        return (f"Active workspace: {w['name']} (id={w['id']}): "
+                f"{w['windows']} window(s), monitor {w['monitor']}")
 
     @mcp.tool()
-    async def toggle_floating(target: str | None = None) -> str:
-        """Toggle floating for active/selected window."""
-        await (await get_backend()).toggle_floating(target)
-        return f"Toggled floating{f' for {target}' if target else ''}"
+    async def toggle_special(name: str) -> str:
+        """Toggle a special (scratchpad) workspace by name."""
+        await (await get_backend()).toggle_special(name)
+        return f"Toggled special workspace '{name}'"
+
+    @mcp.tool()
+    async def move_to_special(name: str, target: str | None = None) -> str:
+        """Move active/selected window to special workspace `name`."""
+        await (await get_backend()).move_to_special(name, target)
+        return f"Moved{f' {target}' if target else ''} to special:{name}"
+
+    @mcp.tool()
+    async def toggle_fullscreen(mode: str = "fullscreen", action: str = "toggle") -> str:
+        """Set fullscreen state. mode: "fullscreen"|"maximize", action: "set"|"unset"|"toggle"."""
+        await (await get_backend()).toggle_fullscreen(mode, action)
+        return f"{action.capitalize()}d {mode}"
+
+    @mcp.tool()
+    async def toggle_floating(target: str | None = None, action: str = "toggle") -> str:
+        """Set floating state. action: "set"|"unset"|"toggle"."""
+        await (await get_backend()).toggle_floating(target, action)
+        return f"{action.capitalize()}d floating{f' for {target}' if target else ''}"
 
     @mcp.tool()
     async def launch_app(command: str) -> str:
-        """Launch an app detached via Hyprland (no shell expansion)."""
+        """Launch an app detached (no shell — no pipes/redirects; binary + args only)."""
         await (await get_backend()).launch(command)
         return f"Launched: {command}"
 
     @mcp.tool()
-    async def clipboard_read() -> str:
-        """Read clipboard text."""
+    async def clipboard_read(max_chars: int = 4000) -> str:
+        """Read clipboard text (truncated to max_chars)."""
         from ..core import clipboard
-        return await clipboard.read()
+        text = await clipboard.read()
+        if len(text) > max_chars:
+            return text[:max_chars] + f"\n...[truncated {len(text) - max_chars} chars]"
+        return text
 
     @mcp.tool()
     async def clipboard_write(text: str) -> str:
@@ -175,14 +197,20 @@ def register(mcp, get_backend, settings):
 
     @mcp.tool()
     async def key_press(keys: str, target: str | None = None) -> str:
-        """Press combo ("ctrl+c") or single key ("Return")."""
+        """Press combo ("ctrl+c") or single key ("Return"). Single source for shortcuts."""
         from ..core import input as inp
         await inp.key_press(await get_backend(), keys, target=target)
         return f"Pressed {keys}{f' on {target}' if target else ''}"
 
     @mcp.tool()
-    async def send_shortcut(mods: str, key: str, target: str | None = None) -> str:
-        """Send shortcut with explicit mods/key, optional window target."""
-        await (await get_backend()).send_shortcut(mods, key, target)
-        desc = f"{mods}+{key}" if mods else key
-        return f"Sent shortcut {desc}{f' to {target}' if target else ''}"
+    async def paste_text(text: str, target: str | None = None) -> str:
+        """Reliable path for unicode/long text: clipboard + ctrl+v (wtype chokes on these)."""
+        from ..core import clipboard
+        from ..core import input as inp
+        b = await get_backend()
+        await clipboard.write(text)
+        if target:
+            await b.focus_window(target)
+            await asyncio.sleep(settings.focus_settle_s)
+        await inp.key_press(b, "ctrl+v")
+        return f"Pasted {len(text)} characters"

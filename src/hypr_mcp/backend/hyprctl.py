@@ -136,17 +136,23 @@ class HyprlandBackend:
         return await self._lua(
             f"hl.dsp.window.resize({{w = {int(width)}, h = {int(height)}, x = {ox}, y = {oy}}})")
 
-    async def toggle_fullscreen(self, mode: str) -> str:
+    async def toggle_fullscreen(self, mode: str = "fullscreen", action: str = "toggle") -> str:
+        if action not in ("set", "unset", "toggle"):
+            from ..errors import HyprMCPError
+            raise HyprMCPError(f"Bad action {action!r}, expected set|unset|toggle")
         if mode == "fullscreen":
-            return await self._lua("hl.dsp.window.fullscreen({action=\"toggle\"})")
+            return await self._lua(f"hl.dsp.window.fullscreen({{action={lua_str(action)}}})")
         return await self._lua(
-            "hl.dsp.window.fullscreen({mode=\"maximized\", action=\"toggle\"})")
+            f"hl.dsp.window.fullscreen({{mode=\"maximized\", action={lua_str(action)}}})")
 
-    async def toggle_floating(self, target: str | None) -> str:
+    async def toggle_floating(self, target: str | None = None, action: str = "toggle") -> str:
+        if action not in ("set", "unset", "toggle"):
+            from ..errors import HyprMCPError
+            raise HyprMCPError(f"Bad action {action!r}, expected set|unset|toggle")
         if target:
             return await self._lua(
-                f"hl.dsp.window.float({{action=\"toggle\", window={lua_str(target)}}})")
-        return await self._lua("hl.dsp.window.float({action=\"toggle\"})")
+                f"hl.dsp.window.float({{action={lua_str(action)}, window={lua_str(target)}}})")
+        return await self._lua(f"hl.dsp.window.float({{action={lua_str(action)}}})")
 
     async def switch_workspace(self, workspace: str) -> str:
         try:
@@ -165,7 +171,18 @@ class HyprlandBackend:
         return await self._lua(f"hl.dsp.send_shortcut({{{', '.join(fields)}}})")
 
     async def launch(self, command: str) -> str:
-        return await self._lua(f"hl.dsp.exec_cmd({lua_str(command)})")
+        # exec_raw: no shell expansion (exec_cmd would run sh -c).
+        return await self._lua(f"hl.dsp.exec_raw({lua_str(command)})")
+
+    async def toggle_special(self, name: str) -> str:
+        return await self._lua(f"hl.dsp.workspace.toggle_special({lua_str(name)})")
+
+    async def move_to_special(self, name: str, target: str | None = None) -> str:
+        ws = f"special:{name}"
+        if target:
+            return await self._lua(
+                f"hl.dsp.window.move({{workspace={lua_str(ws)}, window={lua_str(target)}}})")
+        return await self._lua(f"hl.dsp.window.move({{workspace={lua_str(ws)}}})")
 
     async def window_origin(self, selector: str) -> tuple[int, int]:
         clients = await query("clients")

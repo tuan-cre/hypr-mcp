@@ -35,20 +35,17 @@ def register(mcp, get_backend, settings):
         return [image, images.coord_help(iw, ih, nw, nh, ox, oy, scale)]
 
     @mcp.tool()
-    async def screenshot_with_ocr(monitor: str | None = None, window: str | None = None,
-                                  region: str | None = None, scope: str = "auto") -> list:
-        """Screenshot (active window by default) + OCR text with coords."""
-        from ..core import images, ocr
+    async def screenshot_save(path: str, monitor: str | None = None,
+                              window: str | None = None, region: str | None = None,
+                              scope: str = "auto") -> str:
+        """Full-res PNG to disk (no token cost). For debugging OCR without inline image."""
+        import os
         png, ox, oy = await _capture(get_backend, settings, monitor, window, region, scope)
-        text = await asyncio.to_thread(ocr.extract_text, png, settings)
-        image, _ = images.resize_and_compress(
-            png, max_width=settings.screenshot_max_width,
-            quality=settings.screenshot_quality)
-        boxes = await asyncio.to_thread(ocr.extract_boxes, png, settings)
-        lines = [f"OCR text ({len(boxes)} words, origin {ox},{oy}):", text or "(no text)",
-                 "Word coords (screen):"]
-        lines += [f"- \"{b['text']}\" at ({b['x']+ox},{b['y']+oy}) [{b['conf']}%]" for b in boxes[:200]]
-        return [image, "\n".join(lines)]
+        full = os.path.expanduser(path)
+        os.makedirs(os.path.dirname(full) or ".", exist_ok=True)
+        with open(full, "wb") as f:
+            f.write(png)
+        return f"Saved {len(png)} bytes to {full} (origin {ox},{oy})"
 
     @mcp.tool()
     async def find_text_on_screen(target: str, monitor: str | None = None,
@@ -91,39 +88,3 @@ def register(mcp, get_backend, settings):
         await asyncio.sleep(settings.click_settle_s)
         await inp.click(button, double=double)
         return f"{'Double-clicked' if double else 'Clicked'} '{m['text']}' at ({sx}, {sy}) [conf: {m['conf']}%]"
-
-    @mcp.tool()
-    async def type_into(text: str, input_hint: str | None = None,
-                        submit: bool = False, window: str | None = None) -> str:
-        """Click an input field by placeholder hint, type, optionally Enter."""
-        from ..core import input as inp, ocr
-        import asyncio as _aio
-        b = await get_backend()
-        if window:
-            await b.focus_window(window)
-            await _aio.sleep(settings.focus_settle_s)
-        png, ox, oy = await _capture(get_backend, settings, None, window, None, "auto")
-        boxes = await asyncio.to_thread(ocr.extract_boxes, png, settings)
-        hints = [input_hint] if input_hint else [
-            "Type a message", "Message", "Search", "Type here",
-            "Write a message", "Enter message", "Say something"]
-        match, used = None, None
-        for h in hints:
-            found = ocr.find_text(boxes, h)
-            if found:
-                match, used = found[0], h
-                break
-        if not match:
-            preview = (await asyncio.to_thread(ocr.extract_text, png, settings))[:500]
-            return f"Could not find input field. Tried: {hints}\n\nOCR detected text:\n{preview}"
-        sx, sy = match["x"] + ox + match["w"] // 2, match["y"] + oy + match["h"] // 2
-        await b.move_cursor(sx, sy)
-        await inp.click("left")
-        await _aio.sleep(0.1)
-        await inp.type_text(text)
-        result = f"Found '{used}' at ({sx},{sy}), typed {len(text)} chars"
-        if submit:
-            await _aio.sleep(0.05)
-            await inp.key_press(b, "Return")
-            result += ", pressed Enter"
-        return result
