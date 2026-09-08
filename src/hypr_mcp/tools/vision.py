@@ -5,11 +5,11 @@ import asyncio
 
 async def _capture(get_backend, settings, monitor=None, window=None, region=None,
                    scope="auto", include_cursor=False):
-    from ..backend import common
+    from ..backend import hyprctl as _h
     from ..core import grim
     if scope == "full" or monitor or window or region:
         return await grim.capture(monitor, window, region, include_cursor)
-    active = await common.query("activewindow")
+    active = await _h.query("activewindow")
     if active and active.get("class"):
         x, y = active["at"]
         w, h = active["size"]

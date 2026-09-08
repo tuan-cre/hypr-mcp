@@ -3,7 +3,7 @@
 from ..core.geometry import Region, find_client
 from ..errors import ScreenshotError, require_tool
 from .proc import run
-from ..backend import common
+from ..backend import hyprctl as _h
 
 
 async def capture(monitor=None, window=None, region=None, include_cursor=False):
@@ -13,7 +13,7 @@ async def capture(monitor=None, window=None, region=None, include_cursor=False):
     if include_cursor:
         cmd.append("-c")
     if window:
-        clients = await common.query("clients")
+        clients = await _h.query("clients")
         c = find_client(clients, window)
         if c is None:
             raise ScreenshotError(f"No window found matching '{window}'")
@@ -26,7 +26,7 @@ async def capture(monitor=None, window=None, region=None, include_cursor=False):
         ox, oy = r.x, r.y
     elif monitor:
         cmd += ["-o", monitor]
-        for m in await common.query("monitors"):
+        for m in await _h.query("monitors"):
             if m["name"] == monitor:
                 ox, oy = int(m["x"]), int(m["y"])
                 break

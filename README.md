@@ -2,10 +2,7 @@
 
 MCP server for Hyprland desktop automation — screenshots, input, window management, OCR.
 
-Rewrite of `alderban107/hyprland-mcp` with dual-version backend support:
-
-- `0.55+`: `hl.dsp.*` Lua dispatch
-- pre-0.55: legacy bare-word dispatch (auto-detected via `hyprctl version`, override with `HYPR_MCP_BACKEND=lua|legacy`)
+Requires Hyprland >= 0.55 (Lua `hl.dsp.*` dispatch). Older versions fail fast with a clear error.
 
 ## Run
 

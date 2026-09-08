@@ -1,4 +1,4 @@
-from hypr_mcp.backend.common import is_lua_version, lua_str, parse_version, shortcut_key
+from hypr_mcp.backend.hyprctl import MIN_VERSION, lua_str, parse_version, shortcut_key
 from hypr_mcp.core.geometry import Region, matches_selector
 
 
@@ -8,11 +8,10 @@ def test_parse_version():
     assert parse_version("garbage") is None
 
 
-def test_is_lua():
-    assert is_lua_version("Hyprland 0.55.0 foo")
-    assert is_lua_version("Hyprland 0.56.1 foo")
-    assert not is_lua_version("Hyprland 0.54.3 foo")
-    assert not is_lua_version("??? ")
+def test_min_version_gate():
+    assert parse_version("Hyprland 0.55.0 foo") >= MIN_VERSION
+    assert parse_version("Hyprland 0.56.1 foo") >= MIN_VERSION
+    assert parse_version("Hyprland 0.54.3 foo") < MIN_VERSION
 
 
 def test_lua_str():

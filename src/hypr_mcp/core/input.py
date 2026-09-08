@@ -2,7 +2,7 @@
 
 import asyncio
 
-from ..backend import common
+from ..backend import hyprctl as _h
 from ..errors import InputError, require_tool
 from .proc import run
 
@@ -54,9 +54,9 @@ async def key_press(backend, keys: str, target: str | None = None) -> None:
         require_tool("wtype")
         if target:
             await backend.focus_window(target)
-        await run("wtype", "-k", common.shortcut_key(parts[0]))
+        await run("wtype", "-k", _h.shortcut_key(parts[0]))
         return
-    key = common.shortcut_key(parts[-1])
+    key = _h.shortcut_key(parts[-1])
     mods = [p.upper() for p in parts[:-1]]
     bad = [m for m in mods if m not in _MODS]
     if bad:

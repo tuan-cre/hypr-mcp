@@ -2,7 +2,7 @@
 
 from mcp.server.fastmcp import FastMCP
 
-from .backend.detect import detect
+from .backend import require_backend
 from .config import Settings
 from .tools import desktop, vision
 
@@ -21,7 +21,7 @@ def create_server(settings: Settings | None = None) -> FastMCP:
 
     async def get_backend():
         if backend[0] is None:
-            backend[0] = await detect(settings)
+            backend[0] = await require_backend(settings)
         return backend[0]
 
     desktop.register(mcp, get_backend, settings)

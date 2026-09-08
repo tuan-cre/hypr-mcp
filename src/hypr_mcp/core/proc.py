@@ -2,7 +2,7 @@
 
 import asyncio
 
-from .errors import HyprMCPError
+from ..errors import HyprMCPError
 
 
 async def run(*cmd: str, input_bytes: bytes | None = None) -> bytes:
