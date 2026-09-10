@@ -24,6 +24,9 @@ def test_shortcut_key():
     assert shortcut_key("A") == "a"
     assert shortcut_key("F4") == "f4"
     assert shortcut_key("space") == "space"
+    assert shortcut_key("/") == "slash"
+    assert shortcut_key(".") == "period"
+    assert shortcut_key("-") == "minus"
 
 
 def test_region():

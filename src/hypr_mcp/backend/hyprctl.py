@@ -22,6 +22,10 @@ _KEY_ALIASES = {
     "Left": "left", "Right": "right", "Up": "up", "Down": "down",
     "PageUp": "page_up", "Page_Up": "page_up",
     "PageDown": "page_down", "Page_Down": "page_down",
+    # Printable punctuation -> XKB names (wtype -k needs these; "/" fails).
+    "/": "slash", ".": "period", ",": "comma", "-": "minus", "=": "equal",
+    ";": "semicolon", "'": "apostrophe", "[": "bracketleft",
+    "]": "bracketright", "\\": "backslash", "`": "grave",
 }
 
 
