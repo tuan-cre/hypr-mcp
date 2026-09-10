@@ -23,9 +23,22 @@ def register(mcp, get_backend, settings):
     async def screenshot(monitor: str | None = None, window: str | None = None,
                          region: str | None = None,
                          max_width: int | None = None, quality: int | None = None,
-                         include_cursor: bool = False) -> list:
-        """Screenshot to inline JPEG + coordinate mapping (coords are absolute)."""
+                         include_cursor: bool = False,
+                         path: str | None = None):
+        """Screenshot to inline JPEG + coordinate mapping (coords are absolute).
+
+        Pass path to save full-res PNG to disk instead (no token cost) —
+        for debugging OCR without an inline image.
+        """
+        import os
         from ..core import grim, images
+        if path:
+            png, ox, oy = await grim.capture(monitor, window, region, include_cursor)
+            full = os.path.expanduser(path)
+            os.makedirs(os.path.dirname(full) or ".", exist_ok=True)
+            with open(full, "wb") as f:
+                f.write(png)
+            return f"Saved {len(png)} bytes to {full} (origin {ox},{oy})"
         mw = max_width or settings.screenshot_max_width
         q = quality or settings.screenshot_quality
         png, ox, oy = await grim.capture(monitor, window, region, include_cursor)
@@ -33,19 +46,6 @@ def register(mcp, get_backend, settings):
         image, scale = images.resize_and_compress(png, max_width=mw, quality=q)
         iw, ih = (int(nw * scale), int(nh * scale)) if scale != 1.0 else (nw, nh)
         return [image, images.coord_help(iw, ih, nw, nh, ox, oy, scale)]
-
-    @mcp.tool()
-    async def screenshot_save(path: str, monitor: str | None = None,
-                              window: str | None = None, region: str | None = None,
-                              scope: str = "auto") -> str:
-        """Full-res PNG to disk (no token cost). For debugging OCR without inline image."""
-        import os
-        png, ox, oy = await _capture(get_backend, settings, monitor, window, region, scope)
-        full = os.path.expanduser(path)
-        os.makedirs(os.path.dirname(full) or ".", exist_ok=True)
-        with open(full, "wb") as f:
-            f.write(png)
-        return f"Saved {len(png)} bytes to {full} (origin {ox},{oy})"
 
     @mcp.tool()
     async def find_text_on_screen(target: str, monitor: str | None = None,

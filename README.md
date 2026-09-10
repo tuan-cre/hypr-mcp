@@ -46,21 +46,21 @@ Then add to `~/.config/opencode/opencode.jsonc`:
 
 Or manually: `pipx install git+https://github.com/tuan-cre/hypr-mcp.git`
 
-## Tools (31)
+## Tools (27)
 
-Seeing — `screenshot`, `screenshot_save`, `find_text_on_screen`,
-`click_text`, `wait_text`.
+Seeing — `screenshot` (inline JPEG + mapping, or `path` for full-res PNG
+to disk), `find_text_on_screen`, `click_text`, `wait_text`.
 
 Mouse — `mouse_move`, `mouse_click`, `mouse_scroll`, `mouse_drag`.
 
 Keyboard — `type_text`, `key_press`, `paste_text`.
 
-Windows — `list_windows`, `get_active_window`, `focus_window`,
+Windows — `list_windows` (`[focused]`/`[floating]` flags), `focus_window`,
 `close_window`, `move_window`, `resize_window`, `toggle_fullscreen`,
 `toggle_floating`.
 
-Workspaces — `list_workspaces`, `get_active_workspace`,
-`switch_workspace`, `toggle_special`, `move_to_special`.
+Workspaces — `list_workspaces` (`[focused]` flag), `switch_workspace`,
+`toggle_special` (move via `move_window` + `"special:name"`).
 
 Misc — `list_monitors`, `get_cursor_position`, `clipboard_read`,
 `clipboard_write`, `launch_app`, `wait_window`.

@@ -18,12 +18,14 @@ def register(mcp, get_backend, settings):
 
     @mcp.tool()
     async def list_workspaces() -> str:
-        """List active workspaces with window counts."""
+        """List workspaces with window counts. Active one is marked [focused]."""
         b = await get_backend()
+        active = await b.query("activeworkspace")
         ws = sorted(await b.query("workspaces"), key=lambda w: w["id"])
         return "\n".join(
             f"- Workspace {w['name']} (id={w['id']}): "
-            f"{w['windows']} window(s), monitor {w['monitor']}" for w in ws)
+            f"{w['windows']} window(s), monitor {w['monitor']}"
+            f"{' [focused]' if w['id'] == active.get('id') else ''}" for w in ws)
 
     @mcp.tool()
     async def switch_workspace(workspace: str) -> str:
@@ -49,23 +51,13 @@ def register(mcp, get_backend, settings):
         out = []
         for c in clients:
             focused = " [focused]" if c.get("focusHistoryID") == 0 else ""
+            floating = " [floating]" if c.get("floating") else ""
             out.append(
                 f"- [{c['class']}] \"{c['title']}\" — "
                 f"{c['size'][0]}x{c['size'][1]} at ({c['at'][0]},{c['at'][1]}), "
-                f"workspace {c['workspace']['name']}, address {c.get('address', '?')}{focused}")
+                f"workspace {c['workspace']['name']}, address {c.get('address', '?')}"
+                f"{focused}{floating}")
         return "\n".join(out)
-
-    @mcp.tool()
-    async def get_active_window() -> str:
-        """Details about the focused window."""
-        w = await (await get_backend()).query("activewindow")
-        if not w or not w.get("class"):
-            return "No window is currently focused."
-        return (
-            f"Active window: [{w['class']}] \"{w['title']}\"\n"
-            f"Size: {w['size'][0]}x{w['size'][1]}, Position: ({w['at'][0]},{w['at'][1]})\n"
-            f"Workspace: {w['workspace']['name']}, Monitor: {w['monitor']}\n"
-            f"Floating: {w['floating']}, Fullscreen: {w['fullscreen']}")
 
     @mcp.tool()
     async def focus_window(target: str) -> str:
@@ -80,7 +72,7 @@ def register(mcp, get_backend, settings):
     @mcp.tool()
     async def move_window(target: str | None = None, x: int | None = None,
                           y: int | None = None, workspace: str | None = None) -> str:
-        """Move active/selected window to pixels and/or workspace."""
+        """Move active/selected window to pixels and/or workspace (incl. "special:name")."""
         return await (await get_backend()).move_window(x, y, workspace, target)
 
     @mcp.tool()
@@ -90,11 +82,10 @@ def register(mcp, get_backend, settings):
         return f"Resized to {width}x{height}"
 
     @mcp.tool()
-    async def get_active_workspace() -> str:
-        """Focused workspace with window count and monitor."""
-        w = await (await get_backend()).query("activeworkspace")
-        return (f"Active workspace: {w['name']} (id={w['id']}): "
-                f"{w['windows']} window(s), monitor {w['monitor']}")
+    async def toggle_special(name: str) -> str:
+        """Toggle a special (scratchpad) workspace by name."""
+        await (await get_backend()).toggle_special(name)
+        return f"Toggled special workspace '{name}'"
 
     @mcp.tool()
     async def wait_window(target: str | None = None, title_contains: str | None = None,
@@ -105,18 +96,6 @@ def register(mcp, get_backend, settings):
         (e.g. title_contains="Example Domain"). Returns instantly on match.
         """
         return await (await get_backend()).wait_window(target, title_contains, timeout)
-
-    @mcp.tool()
-    async def toggle_special(name: str) -> str:
-        """Toggle a special (scratchpad) workspace by name."""
-        await (await get_backend()).toggle_special(name)
-        return f"Toggled special workspace '{name}'"
-
-    @mcp.tool()
-    async def move_to_special(name: str, target: str | None = None) -> str:
-        """Move active/selected window to special workspace `name`."""
-        await (await get_backend()).move_to_special(name, target)
-        return f"Moved{f' {target}' if target else ''} to special:{name}"
 
     @mcp.tool()
     async def toggle_fullscreen(mode: str = "fullscreen", action: str = "toggle") -> str:

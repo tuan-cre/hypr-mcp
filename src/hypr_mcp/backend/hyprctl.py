@@ -304,14 +304,6 @@ class HyprlandBackend:
     async def toggle_special(self, name: str) -> str:
         return await self._lua(f"hl.dsp.workspace.toggle_special({lua_str(name)})")
 
-    async def move_to_special(self, name: str, target: str | None = None) -> str:
-        ws = f"special:{name}"
-        if target:
-            win = await self._resolve(target)
-            return await self._lua(
-                f"hl.dsp.window.move({{workspace={lua_str(ws)}, window={lua_str(win)}}})")
-        return await self._lua(f"hl.dsp.window.move({{workspace={lua_str(ws)}}})")
-
     async def window_origin(self, selector: str) -> tuple[int, int]:
         clients = await query("clients")
         c = find_client(clients, selector)
